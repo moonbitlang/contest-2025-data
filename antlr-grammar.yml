@@ -1,0 +1,68 @@
+%YAML 1.2
+---
+name: ANTLR
+file_extensions: [g4]
+scope: source.antlr
+
+contexts:
+  main:
+    - match: '\b(grammar|options|tokens|import|fragment|lexer|parser|tree|grammar|protected|public|private|returns|locals|throws|)\b'
+      scope: keyword
+    - match: '[A-Z][\w_]*'
+      scope: constant.language
+    - match: '[a-z][\w_]*'
+      scope: entity.name.type
+    - match: ':'
+      scope: punctuation.separator
+      push: in_def
+    - match: '//.*$'
+      scope: comment.line.double-slash
+
+  in_def:
+    - match: 'skip|channel|mode'
+      scope: keyword
+    - match: '\s+'
+      scope: white.space
+    - match: '[A-Z][\w_]+'
+      scope: constant.language
+    - match: '[a-z][\w_]*'
+      scope: entity
+    - match: ';'
+      scope: punctuation.terminator
+      pop: true
+    - match: '//.*$'
+      scope: comment.line.double-slash
+    - match: "'"
+      scope: string.single
+      push: in_string
+    - match: '\['
+      scope: string.single
+      push: in_char_span
+    - match: '[+*?]'
+      scope: keyword.operator
+    - match: '[|]'
+      scope: keyword.operator
+    - match: '->'
+      scope: keyword.operator
+    - match: '[()]'
+      scope: punctuation
+    - match: '\#\s*[\w\d_]+'
+      scope: comment.line.double-slash
+
+  in_string:
+    - match: "'"
+      scope: string.single
+      pop: true
+    - match: "[^']"
+      scope: string.single
+    - match: '\\.'
+      scope: string.escape
+
+  in_char_span:
+    - match: '[^\]]'
+      scope: string.single
+    - match: '\]'
+      scope: string.single
+      pop: true
+    - match: '\\.'
+      scope: string.escape
