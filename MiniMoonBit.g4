@@ -7,7 +7,7 @@ prog: top_level* EOF;
 // Top level declarations should start at the beginning of the line, i.e.
 // token.column == 0. Since this is non-context-free, it is not included in this
 // backend-agnostic ANTLR grammar.
-top_level: top_let_decl | toplevel_fn_decl | struct_decl;
+top_level: top_let_decl | toplevel_fn_decl | struct_decl | enum_decl;
 top_let_decl:
 	'let' IDENTIFIER (':' type)? '=' expr ';';
 toplevel_fn_decl: (main_fn_decl | top_fn_decl);
@@ -30,6 +30,15 @@ struct_field_list:
 struct_field:
 	IDENTIFIER type_annotation;
 
+enum_decl:
+ 'enum' ('[' UPPER_IDENTIFIER ']')? UPPER_IDENTIFIER '{' enum_variant_list? '}';
+enum_variant_list:
+	enum_variant (';' enum_variant)* ';'?;
+enum_variant:
+  UPPER_IDENTIFIER ('(' enum_variant_field_list? ')')?;
+enum_variant_field_list:
+	type (',' type)*;
+
 nontop_fn_decl:
 	'fn' IDENTIFIER '(' nontop_param_list? ')' (
 		'->' type
@@ -41,6 +50,7 @@ nontop_param: IDENTIFIER type_annotation?;
 // Statements
 stmt:
 	let_tuple_stmt
+	| let_mut_stmt
 	| let_stmt
 	| fn_decl_stmt
 	| assign_stmt
@@ -48,10 +58,14 @@ stmt:
 	| return_stmt
 	| expr_stmt;
 
+binding: IDENTIFIER | WILDCARD ;
+
 let_tuple_stmt:
-	'let' '(' IDENTIFIER (',' IDENTIFIER)* ')' type_annotation? '=' expr ';' ;
+	'let' '(' binding (',' binding)* ')' type_annotation? '=' expr ';' ;
+let_mut_stmt:
+	'let' 'mut' IDENTIFIER type_annotation? '=' expr ';';
 let_stmt:
-	'let' 'mut'? IDENTIFIER type_annotation? '=' expr ';';
+	'let' binding type_annotation? '=' expr ';';
 type_annotation: COLON type;
 
 fn_decl_stmt: nontop_fn_decl;
@@ -99,8 +113,23 @@ mul_div_level_expr: // left associative
 	| mul_div_level_expr '%' if_level_expr
 	| if_level_expr;
 
-if_level_expr: get_or_apply_level_expr | if_expr;
+if_level_expr: get_or_apply_level_expr | if_expr | match_expr;
 if_expr: 'if' expr block_expr ('else' (if_expr | block_expr))?;
+
+match_expr: 'match' expr '{' match_arm_list '}';
+match_arm_list:
+	match_arm (';' match_arm)* ';'?;
+match_arm:
+ 	pattern '=>' expr;
+
+pattern:
+  NUMBER
+  | 'true'
+  | 'false'
+  | '(' pattern (',' pattern)* ')' // Tuple pattern
+  | WILDCARD // Wildcard pattern
+  | IDENTIFIER // Variable pattern
+  | (UPPER_IDENTIFIER '::')? UPPER_IDENTIFIER ('(' pattern ( ',' pattern )* ')')?; // Enum variant pattern
 
 get_or_apply_level_expr:
 	value_expr (
@@ -113,6 +142,7 @@ get_or_apply_level_expr:
 value_expr:
 	array_make_expr
 	| struct_construct_expr // eg: Point::{ x: 1, y: 2 }
+	| enum_construct_expr // eg: Point(1, 2)
 	| unit_expr
 	| group_expr
 	| tuple_expr
@@ -144,6 +174,10 @@ struct_field_expr_list:
 	struct_field_expr (',' struct_field_expr)*;
 struct_field_expr:
 	IDENTIFIER ':' expr; // x: 1
+enum_construct_expr:
+  (UPPER_IDENTIFIER '::')? UPPER_IDENTIFIER ('(' enum_construct_field_list? ')')?;
+enum_construct_field_list:
+	expr (',' expr)*; // Point(1, 2)
 identifier_expr: IDENTIFIER;
 
 // Types
@@ -180,6 +214,7 @@ FN: 'fn';
 LET: 'let';
 NUMBER: [0-9]+;
 UPPER_IDENTIFIER: [A-Z][a-zA-Z0-9_]*;
+WILDCARD: '_';
 IDENTIFIER: [a-zA-Z_][a-zA-Z0-9_]*;
 CMP_OPERATOR: '==' | '!=' | '>=' | '<=' | '<' | '>';
 AND: '&&';
