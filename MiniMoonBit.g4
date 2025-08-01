@@ -24,7 +24,7 @@ param: IDENTIFIER type_annotation;
 fn_body: '{' stmt* expr? '}';
 
 struct_decl:
-	'struct' ('[' UPPER_IDENTIFIER ']')? UPPER_IDENTIFIER '{' struct_field_list? '}';
+	'struct' UPPER_IDENTIFIER ('[' UPPER_IDENTIFIER ']')? '{' struct_field_list? '}';
 struct_field_list:
 	struct_field (';' struct_field)* ';'?;
 struct_field:
