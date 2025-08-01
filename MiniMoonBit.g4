@@ -195,7 +195,7 @@ array_type: 'Array' '[' type ']';
 tuple_type: '(' type (',' type)* ')'; // (Int, Bool)
 function_type:
 	'(' type (',' type)* ')' '->' type; // (Int, Bool) -> Int
-generic_type: UPPER_IDENTIFIER '[' UPPER_IDENTIFIER ']'; // [T]
+generic_type: UPPER_IDENTIFIER '[' type ']'; // [T]
 user_defined_type: UPPER_IDENTIFIER;
 
 // Tokens
