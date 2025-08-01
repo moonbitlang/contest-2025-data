@@ -31,7 +31,7 @@ struct_field:
 	IDENTIFIER type_annotation;
 
 enum_decl:
- 'enum' ('[' UPPER_IDENTIFIER ']')? UPPER_IDENTIFIER '{' enum_variant_list? '}';
+ 'enum' UPPER_IDENTIFIER ('[' UPPER_IDENTIFIER ']')? '{' enum_variant_list? '}';
 enum_variant_list:
 	enum_variant (';' enum_variant)* ';'?;
 enum_variant:
