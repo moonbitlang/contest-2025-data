@@ -17,7 +17,7 @@ fn leaky_relu(x: Double, alpha: Double) -> Double {
 fn conv(mat: Array[Array[Double]], w: Int, h: Int, kernel: Array[Array[Double]], kw: Int, kh: Int, stride: Int, activation: (Double) -> Double) -> Array[Array[Double]] {
   let output_w = (w - kw) / stride + 1;
   let output_h = (h - kh) / stride + 1;
-  let output_mat = Array::make(output_h, []);
+  let output_mat = Array::make(output_h, [0.0]);
   let mut i = 0;
   while i < output_h {
     output_mat[i] = Array::make(output_w, 0.0);
@@ -36,7 +36,7 @@ fn conv(mat: Array[Array[Double]], w: Int, h: Int, kernel: Array[Array[Double]],
       while kc < kw {
         kr = 0;
         while kr < kh {
-          output_mat[col][row] += mat[col * stride + kr][row * stride + kc] * kernel[kr][kc];
+          output_mat[col][row] = output_mat[col][row] + mat[col * stride + kr][row * stride + kc] * kernel[kr][kc];
           kr = kr + 1;
         }
         kc = kc + 1;
@@ -53,7 +53,7 @@ fn conv(mat: Array[Array[Double]], w: Int, h: Int, kernel: Array[Array[Double]],
 fn max_pooling(mat: Array[Array[Double]], w: Int, h: Int, kw: Int, kh: Int, stride: Int) -> Array[Array[Double]] {
   let output_w = (w - kw) / stride + 1;
   let output_h = (h - kh) / stride + 1;
-  let output_mat = Array::make(output_h, []);
+  let output_mat = Array::make(output_h, [0.0]);
   let mut i = 0;
   while i < output_h {
     output_mat[i] = Array::make(output_w, 0.0);
@@ -117,8 +117,8 @@ fn main {
     [39.82, 14.08, 43.62,  3.43, 86.12, 60.74,  7.90, 93.43, 33.24, 80.63, 13.77, 84.52, 45.92, 54.58, 55.26, 14.58, 22.93, 56.49, 96.19, 79.94],
     [87.74, 65.17, 64.89, 22.55, 50.79,  5.79, 83.72, 27.37, 16.63, 56.80, 51.34, 93.80,  3.54, 64.30, 26.48,  6.89, 82.57, 48.48, 18.09, 68.94],
     [11.34, 72.28, 66.69, 12.06, 28.10, 68.07, 93.01, 33.77, 85.30, 94.50, 31.52, 50.30,  1.52, 64.37, 78.58,  6.71, 48.97, 76.01, 82.99,  1.60],
-    [69.66, 98.90,  2.90, 74.46,  8.23, 75.48, 13.64, 69.46, 84.66, 62.84, 28.82, 68.25, 97.94, 29.70,  7.38, 78.81, 66.81, 93.61, 22.10, 18.84],
-  ]
+    [69.66, 98.90,  2.90, 74.46,  8.23, 75.48, 13.64, 69.46, 84.66, 62.84, 28.82, 68.25, 97.94, 29.70,  7.38, 78.81, 66.81, 93.61, 22.10, 18.84]
+  ];
 
   let data_w = 20;
   let data_h = 9;
@@ -127,33 +127,34 @@ fn main {
     [0.5, 0.25, -0.15],
     [0.7, -0.1, 0.2],
     [-0.2, 0.6, 0.2]
-  ]
+  ];
   let (conv_kw, conv_kh, conv_stride) = (3, 3, 1);
 
   let conv_out1 = conv(data, data_w, data_h, conv_kernel, conv_kw, conv_kh, conv_stride, relu);
-  let conv_out1_w = (data_w - conv_kw) + 1;  // 20 - 3 + 1 = 18
-  let conv_out1_h = (data_h - conv_kh) + 1;  // 9 - 3 + 1 = 7
+  let conv_out1_w = (data_w - conv_kw) + 1;
+  let conv_out1_h = (data_h - conv_kh) + 1;
 
   let pool_kw = 2;
   let pool_kh = 2;
   let pool_stride = 2;
   let pool_out1 = max_pooling(conv_out1, conv_out1_w, conv_out1_h, pool_kw, pool_kh, pool_stride);
-  let pool_out1_w = (conv_out1_w - pool_kw) / pool_stride + 1;  // (18 - 2) / 2 + 1 = 9
-  let pool_out1_h = (conv_out1_h - pool_kh) / pool_stride + 1;  // (7 - 2) / 2 + 1 = 3
+  let pool_out1_w = (conv_out1_w - pool_kw) / pool_stride + 1;
+  let pool_out1_h = (conv_out1_h - pool_kh) / pool_stride + 1;
 
   fn inner_leaky_relu(x) {
     leaky_relu(x, 0.01)
   }
+
   let conv_kernel2 = [
     [0.5, 0.25, 0.15],
     [0.1, 0.2, 0.4],
     [0.2, 0.3, 0.4]
-  ]
+  ];
 
   let (conv2_kw, conv2_kh, conv2_stride) = (3, 3, 1);
   let conv_out2 = conv(pool_out1, pool_out1_w, pool_out1_h, conv_kernel2, conv2_kw, conv2_kh, conv2_stride, inner_leaky_relu);
-  let conv_out2_w = (pool_out1_w - conv2_kw) + 1;  // 9 - 3 + 1 = 7
-  let conv_out2_h = (pool_out1_h - conv2_kh) + 1;  // 3 - 3 + 1 = 1
+  let conv_out2_w = (pool_out1_w - conv2_kw) + 1;
+  let conv_out2_h = (pool_out1_h - conv2_kh) + 1;
 
   print_mat(conv_out2, conv_out2_w, conv_out2_h);
 }
