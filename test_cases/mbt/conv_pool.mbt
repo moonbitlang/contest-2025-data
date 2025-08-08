@@ -100,7 +100,7 @@ fn print_mat(mat: Array[Array[Double]], w: Int, h: Int) -> Unit {
   while i < h {
     j = 0;
     while j < w {
-      print_int(truncate(mat[i][j]))
+      print_int(truncate(mat[i][j]));
       j = j + 1;
     }
     i = i + 1;
