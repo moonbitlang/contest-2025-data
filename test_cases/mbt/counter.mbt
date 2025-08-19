@@ -27,5 +27,5 @@ fn main {
   let cond_size = 2;
 
   let result = counter(arr, arr_size, cond, cond_size);
-  println(result);
+  print_int(result);
 }
