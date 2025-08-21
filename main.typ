@@ -130,11 +130,11 @@ MiniMoonBit 遵循 MoonBit 的语义规则。由于编写完整的形式语义�
 
 本次竞赛的评测机可以接收两种形式的提交，一种是RISCV64汇编代码，一种是LLVM IR代码。采用RISCV64汇编代码，并且测评通过的选手，将会获得额外的“寄存器分配”项目的加分。
 
-对于期望提交LLVM IR代码的选手，请注意评测机是使用wasm来编译你的编译器项目的，因此Moonbit的官方llvm绑定`llvm.mbt` 无法在评测机上使用。但Moonbit官方为此次竞赛提供了另一个`MoonLLVM`的项目，它复刻了一个小型的llvm，可以生成满足llvm-19标准的LLVM IR代码。`MoonLLVM`所提供的API与`llvm.mbt`高度相似，多数情况下可以直接替换。你可以在比赛的前半程先使用`llvm.mbt`进行开发，确保生成标准的llvm IR代码，然后在比赛的后半程切换到`MoonLLVM`，以便提交。
+对于期望提交LLVM IR代码的选手，请注意评测机是使用wasm来编译你的编译器项目的，因此MoonBit的官方LLVM绑定`llvm.mbt` 无法在评测机上使用。但MoonBit官方为此次竞赛提供了另一个`MoonLLVM`的项目，它复刻了一个小型的LLVM，可以生成满足LLVM-19标准的LLVM IR代码。`MoonLLVM`所提供的API与`llvm.mbt`高度相似，多数情况下可以直接替换。你可以在比赛的前半程先使用`llvm.mbt`进行开发，确保生成标准的LLVM IR代码，然后在比赛的后半程切换到`MoonLLVM`，以便提交。
 
-请注意`llvm.mbt`和`MoonLLVM`的使用并不是强制的，你也可以在Mooncakes上寻找其它的LLVM IR生成库，或是自行实现一个llvm IR生成工具，满足llvm-19标准即可。
+请注意`llvm.mbt`和`MoonLLVM`的使用并不是强制的，你也可以在Mooncakes上寻找其它的LLVM IR生成库，或是自行实现一个LLVM IR生成工具，满足LLVM-19标准即可。
 
-对于使用`MoonLLVM`，或者中间代码使用llvm IR的选手，如果最终结果仍然输出了RISCV64汇编代码，仍然可以获得“寄存器分配”项目的加分。
+对于使用`MoonLLVM`，或者中间代码使用LLVM IR的选手，如果最终结果仍然输出了RISCV64汇编代码，仍然可以获得“寄存器分配”项目的加分。
 
 自8月1日起到比赛结束，`llvm.mbt` 的breaking change将会给出warning提示。自8月10日起到比赛结束，`MoonLLVM` 的breaking change将会给出warning提示。期间两个项目的一些warning提示可能会直接与竞赛相关，比赛结束之后，将会删除与竞赛相关的warning提示。
 
