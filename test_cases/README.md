@@ -1,11 +1,11 @@
-# 测试说明
+# Public test cases
 
-- `mbt` 目录存放测试用的源文件
-- `ans` 目录存放各个测试的运行结果
-- `func.c` 部分外部函数的参考实现
+- `mbt/` stores the source files of test cases
+- `ans/` stores the expected output
+- `func.c` is the reference implementation of external functions
 
 
-## 必选测例：
+## Base language tests
 
 - ack.mbt
 - adder.mbt
@@ -43,7 +43,7 @@
 - sum-tail.mbt
 - sum.mbt
 
-## 可选测例：
+## Test cases with optional language features
 
 - conv_pool.mbt
 - enum1.mbt
