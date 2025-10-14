@@ -7,7 +7,7 @@
 以下是你可能需要查看的章节：
 
 1. [编译器结构总览与语言简介](./01_overview.md)
-2. [词法分析和语法分析](./02_lexer_and_parser.md)
+2. [词法分析和语法分析](./02_lexer_and_parser.mbt.md)
 3. [类型检查](./03_tyck.md)
 4. [中间表示](./04_ir.md)
 5. [处理闭包](./05_closure.md)
