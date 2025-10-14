@@ -282,7 +282,6 @@ arg_list: expression ("," expression)*;
 variable: ident;
 int_literal: number+;
 
-// 类型
 ty: "Int";
 ident: ...; // 同上
 number: ...; // 同上
