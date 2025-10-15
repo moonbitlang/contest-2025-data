@@ -7,6 +7,8 @@
 （例如，很多动态类型语言会推迟到运行时再做类型检查）。
 不过，在得到抽象语法树之后先做类型检查是在静态编译的过程中比较常见的做法。
 
+在这一章中，我们将实现一个简单的、但是足够在 MiniMoonBit 中使用的双向类型检查器。
+
 > 为了简单起见，我们在这里将不会涉及太多类型系统的知识。
 > 如果你对严谨地定义一个类型系统有兴趣（或者只是单纯的想画平衡木），
 > 可以参阅类型系统的教材，例如 [Types and Programming Languages (TAPL)][tapl]、
@@ -19,6 +21,77 @@
 [tapl]: https://www.cis.upenn.edu/~bcpierce/tapl/
 [pfpl]: https://www.cs.cmu.edu/~rwh/pfpl/abbrev.pdf
 [plfa]: https://plfa.github.io/
+
+## 双向类型检查
+
+你可能发现了名字中的“双向”这个词。
+有没有单向类型检查呢？那当然是有的。
+
+我们举一个伪代码的例子来说明：
+
+```
+fn generic[T](x: Int) -> T {
+  T::convert_from(x)
+}
+
+let x = generic(10)
+x + 1.0
+```
+
+注意到，泛型函数 `generic` 的返回值类型 `T` 是未知的，也不能从函数参数中推导出来；
+赋值目标变量 `x` 的类型一开始也是未知的。
+
+一个**单向类型检查器**只能从一个方向向另一方向检查类型，
+例如从根节点到叶子节点，
+或者反过来从叶子节点到根节点。
+
+比如在上面的例子中，从根到叶子的检查如下：
+
+```
+let x = generic(10)
+    ^ 你的类型是什么？
+    类型检查失败
+```
+
+从叶子到根的检查如下：
+
+```
+let x = generic(10)
+                ^~ 10 是整数常量，所以它的类型是 Int
+let x = generic(10)
+        ^~~~~~~~~~~ generic 的类型是 fn(Int) -> T
+        它的第一个参数是 Int，符合 10 的类型
+        它的返回值类型是 T，无法推断出类型
+        类型检查失败
+```
+
+可以看出，不管是单向的从根到叶子还是从叶子到根的类型检查都无法推导出 `x` 的类型。
+
+而双向类型检查器则可以同时从两个方向检查类型。
+后面出现的代码可以影响到前面出现的代码的类型推导，从而使得类型检查成功。
+
+```
+let x = generic(10)
+    ^ 我遇到了新的变量 x，但是我不知道它的类型
+let x: U = generic(10)
+     ^~~ 我们先管它叫 U
+           |
+           ^~~~~~~~~~~ 所以这个表达式的类型是 U
+let x: U = generic(10)
+           ^~~~~~~~~~~ 有一个函数调用 generic
+           它的类型是 fn(Int) -> T，返回值是 T
+           因为这个表达式的类型是 U，所以 T = U
+let x: U = generic(10)
+                   ^~ generic 的第一个参数是 Int
+                   10 的类型是 Int，符合要求
+x + 1.0
+|   ^~~ 1.0 的类型是 Double
+^ x 的类型是 U
+^~~~~~~ 加法两侧的类型必须相同
+所以 U = Double
+所以 x 的类型是 Double
+类型检查成功
+```
 
 ## 类型定义、带类型的抽象语法树（Typed AST/TAST）
 
@@ -267,7 +340,10 @@ fn type_expr(expr : Expression, scope : Scope) -> TExpression raise TyErr {
 1. 两边表达式类型一致；
 2. 这个一致的类型是整数。
 
-我们通过后面会实现的 `unify` 函数来实现这个过程，先实现 `add` 本体：
+我们通过后面会实现的 `unify` 函数来实现这个过程。
+`unify` 函数是归一化操作的主体，它接受两个类型，并在内部调整它们直到二者相同。
+
+先实现 `add` 本体：
 
 ```mbt
 ///|
@@ -290,7 +366,7 @@ fn type_add(
 这个时候，第二个 `unify` 可能就需要被替换成一个 “判断得到的类型是否可以相加” 的函数了。
 
 类似地，我们可以实现 `call` 的类型检查。
-这个时候，我们需要用到 `unify` 检查。
+我们可以注意到，函数的返回值类型在解析出函数本身之前是未知的，所以需要一个类型变量来表示它。
 
 ```mbt
 ///|
@@ -414,7 +490,7 @@ fn deref_tvar(ty: Ty) -> Ty {
   }
 }
 
-/// occurs-check: detect whether target TVar occurs inside ty
+/// 检查类型变量 `needle` 是否出现在类型 `ty` 中。这是为了避免“无限类型”的产生。
 fn occurs_in(needle: Ref[Ty?], ty: Ty) -> Bool {
   match deref_tvar(ty) {
     TVar(r2) => physical_equal(needle, r2)
@@ -428,6 +504,7 @@ fn occurs_in(needle: Ref[Ty?], ty: Ty) -> Bool {
   }
 }
 
+/// 归一化两个类型变量。
 fn unify_vars(x : Ty, y : Ty, context: String) -> Unit raise TyErr {
   // 将两边的类型变量解析到最深的已知类型的位置
   let x_de = deref_tvar(x)
@@ -531,6 +608,10 @@ fn ast_to_tast(prog: Program) -> TProgram raise TyErr {
 
 ## 测试
 
+我们可以测试一下这个类型检查器的正确性。
+
+下面是一个简单的例子，类型应该全部为 `Int`：
+
 ```mbt
 test {
   // fn add_one(x: Int) -> Int { x + 1 }
@@ -555,7 +636,13 @@ test {
     #|{top_levels: {"add_one": Function(func={name: "add_one", params: [{name: "x", ty: Int}], return_type: Int, body: {expr: Add(left={expr: Variable(name="x"), ty: Int}, right={expr: IntLiteral(value=1), ty: Int}), ty: Int}})}}
   ))
 }
+```
 
+下面用一个更复杂的情况试验一下。
+除了 `recursive` 的类型是 `fn(Int) -> Int` 之外，
+其余的类型都应该是 `Int`：
+
+```mbt
 ///|
 test {
   // fn recursive(x: Int) -> Int { let y = x + 1; recursive(y) }
@@ -580,3 +667,6 @@ test {
   ))
 }
 ```
+
+这样我们就写出了一个可用的双向类型检查器。
+在下一章中，我们将看到这些类型检查后的数据流入更低的抽象层级中。
