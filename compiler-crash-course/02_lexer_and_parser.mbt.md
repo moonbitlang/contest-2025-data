@@ -64,15 +64,15 @@ struct Type {
 
 /// 表达式定义，可能有很多种，所以我们用一个 enum 表示
 enum Expression {
-    /// 变量
-    Variable(name~: String)
-    /// 整数常量
-    IntLiteral(value~: Int)
-    /// 加法表达式
-    Add(left~: Expression, right~: Expression)
-    /// 函数调用
-    Call(func~: Expression, args~: Array[Expression])
-}derive(Show)
+  /// 变量
+  Variable(name~ : String)
+  /// 整数常量
+  IntLiteral(value~ : Int)
+  /// 加法表达式
+  Add(left~ : Expression, right~ : Expression)
+  /// 函数调用
+  Call(func~ : Expression, args~ : Array[Expression])
+} derive(Show)
 ```
 
 ## 分拆词法和语法定义
