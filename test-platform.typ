@@ -16,6 +16,7 @@
 == 更新日志
 
 - 2025-07-09 -- 初稿
+- 2025-10-16 -- 因为 `zig build-exe` 引起的一个 miscompilation, 切换到了 `clang` 和 `gcc` 进行编译。
 
 = 代码提交方式
 
@@ -85,9 +86,14 @@ interface MiniMoonbitJson {
 
   ```sh
   moon run src/bin/main.mbt -- <input> -o <output>
-  zig build-exe -target riscv64-linux -femit-bin=<exe_file> \
-    <out_file> /runtime/riscv_rt/zig-out/lib/libmincaml.a \
-    -O Debug -fno-strip -mcpu=baseline_rv64
+
+  # 编译为 RISC-V 目标的目标文件（支持 .s 或 .ll）
+  clang --target=riscv64-linux-gnu --sysroot=/usr/riscv64-linux-gnu \
+    -c <output> -o <obj_file> -O2 -march=rv64gc -mabi=lp64d
+
+  # 链接生成静态可执行文件（包含运行时）
+  riscv64-linux-gnu-gcc -static -o <exe_file> <obj_file> /runtime/runtime.a \
+    -O0 -march=rv64gc -mabi=lp64d -lc -lm
 
   # 正确性测试
   rvlinux -n <exe_file>
@@ -109,16 +115,14 @@ interface MiniMoonbitJson {
   ```sh
   moon run src/bin/main.mbt -- <input> -o <output>
 
-  # 体积测试
-  zig build-lib -target riscv64-linux -femit-bin=<obj_file> \
-    <output> \
-    -O Debug -fno-strip -mcpu=baseline_rv64
+  # 体积测试（对目标文件求大小）
+  clang --target=riscv64-linux-gnu --sysroot=/usr/riscv64-linux-gnu \
+    -c <output> -o <obj_file> -O2 -march=rv64gc -mabi=lp64d
   size <obj_file> -Gd | awk 'NR == 2 { print $1 }'   # <-- 体积测试结果
 
   # 正确性测试
-  zig build-exe -target riscv64-linux -femit-bin=<exe_file> \
-    <out_file> /runtime/riscv_rt/zig-out/lib/libmincaml.a \
-    -O Debug -fno-strip -mcpu=baseline_rv64
+  riscv64-linux-gnu-gcc -static -o <exe_file> <obj_file> /runtime/runtime.a \
+    -O0 -march=rv64gc -mabi=lp64d -lc -lm
   rvlinux -n <exe_file>
   ```
 

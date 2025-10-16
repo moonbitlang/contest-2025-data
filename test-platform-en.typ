@@ -19,6 +19,7 @@
 == Update Log
 
 - 2025-07-09 -- Initial draft
+- 2025-10-16 -- Switched from Zig-based build to clang/gcc due to a miscompilation in `zig build-exe`.
 
 = Code Submission Method
 
@@ -87,9 +88,12 @@ you should use `panic` or `abort` to exit the program.
 
   ```sh
   moon run src/bin/main.mbt -- <input> -o <output>
-  zig build-exe -target riscv64-linux -femit-bin=<exe_file> \
-    <out_file> /runtime/riscv_rt/zig-out/lib/libmincaml.a \
-    -O Debug -fno-strip -mcpu=baseline_rv64
+
+  # Compile RISC-V target object (supports .s or .ll)
+  clang --target=riscv64-linux-gnu --sysroot=/usr/riscv64-linux-gnu -c <output> -o <obj_file> -O2 -march=rv64gc -mabi=lp64d
+
+  # Link a static executable (including runtime)
+  riscv64-linux-gnu-gcc -static -o <exe_file> <obj_file> /runtime/runtime.a -O0 -march=rv64gc -mabi=lp64d -lc -lm
 
   # Correctness testing
   rvlinux -n <exe_file>
@@ -110,16 +114,12 @@ you should use `panic` or `abort` to exit the program.
   ```sh
   moon run src/bin/main.mbt -- <input> -o <output>
 
-  # Size testing
-  zig build-lib -target riscv64-linux -femit-bin=<obj_file> \
-    <output> \
-    -O Debug -fno-strip -mcpu=baseline_rv64
+  # Size testing (on the object file)
+  clang --target=riscv64-linux-gnu --sysroot=/usr/riscv64-linux-gnu -c <output> -o <obj_file> -O2 -march=rv64gc -mabi=lp64d
   size <obj_file> -Gd | awk 'NR == 2 { print $1 }'   # <-- Size test result
 
-  # Correctness testing
-  zig build-exe -target riscv64-linux -femit-bin=<exe_file> \
-    <out_file> /runtime/riscv_rt/zig-out/lib/libmincaml.a \
-    -O Debug -fno-strip -mcpu=baseline_rv64
+  # Correctness testing (optional)
+  riscv64-linux-gnu-gcc -static -o <exe_file> <obj_file> /runtime/runtime.a -O0 -march=rv64gc -mabi=lp64d -lc -lm
   rvlinux -n <exe_file>
   ```
 
