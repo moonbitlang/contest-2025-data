@@ -1,0 +1,349 @@
+name: MGPIC 2025 MiniMoonBit
+sections:
+  tyck:
+    test_cases: []
+    negative_cases:
+      - arrary_type_mismatch
+      - array_put_type_mismatch
+      - assign_type_mismatch
+      - binary_type_mismatch
+      - block_type_mismatch
+      - closure_func_type_incorrect
+      - func_arg_type_mismacth
+      - func_ret_type_mismatch
+      - if_branch_type_mismatch
+      - if_cond_not_bool
+      - let_tuple_type_mismatch
+      - let_type_mismatch
+      - return_type_mismatch
+      - tuple_type_mismatch
+      - unary_type_mismatch
+    template: tyck
+
+  codegen:
+    test_cases:
+      - ack
+      - adder
+      - adder2
+      - caltz
+      - clamp
+      - cls-bug
+      - cls-bug2
+      - cls-rec
+      - cls-reg-bug
+      - counter
+      - even-odd
+      - float
+      - funcomp
+      - gcd
+      - id
+      - inprod-loop
+      - inprod-rec
+      - inprod
+      - join-reg
+      - join-reg2
+      - join-stack
+      - join-stack2
+      - join-stack3
+      - non-tail-if
+      - non-tail-if2
+      - print
+      - shuffle
+      - spill
+      - spill2
+      - spill3
+      - sum-tail
+      - sum
+    hide_output: false
+    template: regular-compile
+
+  optional-asm:
+    test_cases:
+      - ack
+      - adder
+      - adder2
+      - caltz
+      - clamp
+      - cls-bug
+      - cls-bug2
+      - cls-rec
+      - cls-reg-bug
+      - counter
+      - even-odd
+      - float
+      - funcomp
+      - gcd
+      - id
+      - inprod-loop
+      - inprod-rec
+      - inprod
+      - join-reg
+      - join-reg2
+      - join-stack
+      - join-stack2
+      - join-stack3
+      - non-tail-if
+      - non-tail-if2
+      - print
+      - shuffle
+      - spill
+      - spill2
+      - spill3
+      - sum-tail
+      - sum
+    hide_output: false
+    template: compile-asm
+
+  optional-enum-only:
+    test_cases:
+      - enum1
+      - enum2
+      - enum3
+      - enum4
+      - enum5
+    hide_output: false
+    template: regular-compile
+
+  optional-generic-only:
+    test_cases:
+      - generic1
+      - generic2
+      - generic3
+      - generic4
+      - generic5
+    hide_output: false
+    template: regular-compile
+
+  optional-mixed:
+    test_cases:
+      - generic_enum1
+      - generic_enum2
+      - generic_struct_enum
+      - generic_struct1
+      - generic_struct2
+      - smith1
+      - smith2
+      - smith3
+      - smith4
+      - smith5
+      - struct_enum1
+      - struct_enum2
+    hide_output: false
+    template: regular-compile
+
+  optional-struct-only:
+    test_cases:
+      - struct1
+      - struct2
+      - struct3
+      - struct4
+      - struct5
+    hide_output: false
+    template: regular-compile
+
+  size:
+    test_cases:
+      - almabench
+      - cholesky
+      - conv_pool2
+      - conv_pool3
+      - eigen
+      - fpquicksort
+      - invmat
+      - lu
+      - nbody
+      - qr
+      - queen
+      - schur
+      - svd
+    hide_output: true
+    template: size
+    comparison_file: '_size_comparison.json'
+
+  speed:
+    test_cases:
+      - almabench
+      - cholesky
+      - conv_pool2
+      - conv_pool3
+      - eigen
+      - fpquicksort
+      - invmat
+      - lu
+      - nbody
+      - qr
+      - queen
+      - schur
+      - svd
+    hide_output: true
+    template: speed
+    comparison_file: '_speed_comparison.json'
+
+pipelines:
+  tyck:
+    stages:
+      - steps:
+          - cmd: ['moonrun', 'target/wasm-gc/release/build/bin/bin.wasm', '--typecheck', '$input']
+        container_image: '$build'
+
+  regular-compile:
+    stages:
+      - steps:
+          - cmd: ['moonrun', 'target/wasm-gc/release/build/bin/bin.wasm', '$input', '-o', '$output']
+          - cmd:
+              [
+                'clang',
+                '--target=riscv64-linux-gnu',
+                '--sysroot=/usr/riscv64-linux-gnu',
+                '-c',
+                '$output',
+                '-o',
+                '$obj',
+                '-O0',
+                '-march=rv64gc',
+                '-mabi=lp64d',
+                '-mllvm',
+                '--optimize-regalloc',
+                '-mllvm',
+                '--regalloc=greedy',
+              ]
+          - cmd:
+              [
+                'riscv64-linux-gnu-gcc',
+                '-static',
+                '-o',
+                '$exe',
+                '$obj',
+                '/runtime/runtime.a',
+                '-O0',
+                '-march=rv64gc',
+                '-mabi=lp64d',
+                '-lc',
+                '-lm',
+              ]
+          - cmd: ['qemu-riscv64', '$exe']
+            stdout_compare: '$ans'
+        container_image: '$build'
+
+  # Basically just regular-compile, but fixed the output file type to `.s`
+  compile-asm:
+    stages:
+      - steps:
+          - cmd: ['moonrun', 'target/wasm-gc/release/build/bin/bin.wasm', '$input', '-o', '$asm']
+          - cmd:
+              [
+                'clang',
+                '--target=riscv64-linux-gnu',
+                '--sysroot=/usr/riscv64-linux-gnu',
+                '-c',
+                '$asm',
+                '-o',
+                '$obj',
+                '-O0',
+                '-march=rv64gc',
+                '-mabi=lp64d',
+              ]
+          - cmd:
+              [
+                'riscv64-linux-gnu-gcc',
+                '-static',
+                '-o',
+                '$exe',
+                '$obj',
+                '/runtime/runtime.a',
+                '-O0',
+                '-march=rv64gc',
+                '-mabi=lp64d',
+                '-lc',
+                '-lm',
+              ]
+          - cmd: ['qemu-riscv64', '$exe']
+            stdout_compare: '$ans'
+        container_image: '$build'
+
+  speed:
+    stages:
+      - steps:
+          - cmd: ['moonrun', 'target/wasm-gc/release/build/bin/bin.wasm', '$input', '-o', '$output']
+          - cmd:
+              [
+                'clang',
+                '--target=riscv64-linux-gnu',
+                '--sysroot=/usr/riscv64-linux-gnu',
+                '-c',
+                '$output',
+                '-o',
+                '$obj',
+                '-O0',
+                '-march=rv64gc',
+                '-mabi=lp64d',
+                '-mllvm',
+                '--optimize-regalloc',
+                '-mllvm',
+                '--regalloc=greedy',
+              ]
+          - cmd:
+              [
+                'riscv64-linux-gnu-gcc',
+                '-static',
+                '-o',
+                '$exe',
+                '$obj',
+                '/runtime/runtime.a',
+                '-O0',
+                '-march=rv64gc',
+                '-mabi=lp64d',
+                '-lc',
+                '-lm',
+              ]
+        container_image: '$build'
+        artifacts: ['*.out', '*.in', '*.ans']
+      - steps:
+          - cmd: ['$exe']
+            stdin_file: '$stdin'
+            stdout_compare: '$ans'
+            test_run_time: true
+        container_image: null
+        machine_tag: 'riscv'
+
+  size:
+    stages:
+      - steps:
+          - cmd: ['moonrun', 'target/wasm-gc/release/build/bin/bin.wasm', '$input', '-o', '$output']
+          - cmd:
+              [
+                'clang',
+                '--target=riscv64-linux-gnu',
+                '--sysroot=/usr/riscv64-linux-gnu',
+                '-c',
+                '$output',
+                '-o',
+                '$obj',
+                '-march=rv64gc',
+                '-mabi=lp64d',
+                '-mllvm',
+                '--optimize-regalloc',
+                '-mllvm',
+                '--regalloc=greedy',
+              ]
+          - cmd: [size, '$obj', -Gd, '|', awk, 'NR == 2 { print $1 }']
+            test_file_size: true
+        container_image: '$build'
+
+metadata_file: minimoonbit.json
+compile_dockerfile: compile.dockerfile
+compile_machine: 'x64'
+cpu_limit: 2
+config_script: config.py
+
+time_limit: 60
+
+build_cpu_limit: 4
+file_ext_mapping:
+  input: 'mbt'
+  output: '$ext'
+  exe: 'out'
+  ans: 'ans'
+  asm: 's'
+  obj: 'o'
+  stdin: 'in'

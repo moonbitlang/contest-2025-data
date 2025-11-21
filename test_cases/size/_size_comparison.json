@@ -1,0 +1,17 @@
+{
+  "baseline_file_size": {
+    "almabench": 16920,
+    "cholesky": 3430,
+    "conv_pool2": 5594,
+    "conv_pool3": 6238,
+    "eigen": 5558,
+    "fpquicksort": 2790,
+    "invmat": 3930,
+    "lu": 4066,
+    "nbody": 4000,
+    "qr": 4188,
+    "queen": 1724,
+    "schur": 5662,
+    "svd": 6316
+  }
+}

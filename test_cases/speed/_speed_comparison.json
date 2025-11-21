@@ -1,0 +1,17 @@
+{
+  "baseline_run_time": {
+    "fpquicksort": 1.068331,
+    "conv_pool2": 2.511195,
+    "svd": 2.694312,
+    "schur": 3.556216,
+    "nbody": 3.796621,
+    "cholesky": 4.30068,
+    "queen": 4.756182,
+    "qr": 5.250789,
+    "invmat": 6.833739,
+    "almabench": 7.215947,
+    "eigen": 7.78622,
+    "lu": 8.235569,
+    "conv_pool3": 11.246083
+  }
+}
